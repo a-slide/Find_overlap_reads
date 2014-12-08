@@ -3,7 +3,7 @@
 
 """
 @package    Find_overlap_read
-@brief
+@brief      Main file of the program, containing a Main 
 @copyright  [GNU General Public License v2](http://www.gnu.org/licenses/gpl-2.0.html)
 @author     Adrien Leger - 2014
 * <adrien.leger@gmail.com>
@@ -20,40 +20,54 @@ import optparse
 import csv
 
 # THIRD PARTY IMPORTS
-#try:
-    #import pysam # from pysam 0.8.1
+try:
+    import pysam # from pysam 0.8.1
 
-#except ImportError as E:
-    #print (E)
-    #print ("Please verify your dependencies. See Readme for more informations\n")
-    #exit()
+except ImportError as E:
+    print (E)
+    print ("Please verify your dependencies. See Readme for more informations\n")
+    exit()
 
 # PACKAGE IMPORTS
 from Interval import Interval
 
-#~~~~~~~MAIN FUNCTION~~~~~~~#
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 class Main(object):
     """
-
+    
     """
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
     #~~~~~~~FONDAMENTAL METHODS~~~~~~~#
 
-    def __init__ (self):
+    def __init__ (self, interval_file=None, align_files=[], output_prefix="out",
+        bam_output=True, report_output=True):
 
         # Define instance variables
         self.program_name =  "find_overlap_read"
         self.program_version = "0.1"
+        self.max_tlen = 1000
 
-        # Parse CLI arguments
-        self.opt_dict = self._optparser()
+        # For interactive IDE call = simple parsing without verification of files 
+        if interval_file:
+            self.opt_dict = {
+                'interval_file' : interval_file,
+                'output_prefix' : output_prefix,
+                'bam_output' : bam_output,
+                'report_output' : report_output,
+                'align_files' : align_files }
+            
+        # Else for Shell call = parse and verify more throrougly CLI arguments
+        else:
+            self.opt_dict = self._optparser()
+        
+        # Print the dictionnary
         for key, value in self.opt_dict.items():
             print (key, "=", value)
 
         # Parse the csv file containing interval coordinates
+        print ("Parsing the CSV csv file containing interval coordinates")
         with open(self.opt_dict["interval_file"], newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter='\t')
             for row in reader:
@@ -67,12 +81,21 @@ class Main(object):
                         Interval(ref_name=row[0], start=int(row[1]), end=int(row[2]))
                     else:
                         Interval(ref_name=row[0], start=int(row[1]), end=int(row[2]), name=row[3])
-
+                
+                # Can by catched if not enough values or invalid numeric value in row
                 except ValueError as E:
                     print (E, "\tSkiping row")
-
+        
+        if Interval.countInstances() == 0:
+            raise ValueError ("No valid row found in the interval file. Please see readme file")
+        
         Interval.printInstances()
+        print ("{} valid interval(s) found in {}".format(
+            Interval.countInstances(),
+            self.opt_dict["interval_file"]))
+
         self.interval_list = Interval.getInstances()
+        #Interval.resetInstances()
 
     def __str__(self):
         msg = "MAIN CLASS\n"
@@ -94,10 +117,76 @@ class Main(object):
     #~~~~~~~PUBLIC METHODS~~~~~~~#
 
     def __call__(self):
-        """
-        """
+        
+        """"""
         stime = time()
+        
+        # Iterate over the bam/sam alignment files given as positional arguments 
+        for align_file in self.opt_dict["align_files"]:
+            sam = pysam.AlignmentFile(align_file, "rb")
+            
+            tot_read = map_read = 0
+            
+            # Iterate over the aligned reads in sam
+            for read in sam:
+                tot_read+=1
+                
+                # If the read is mapped only
+                if not read.is_unmapped:
+                    read_ref = sam.getrname(read.reference_id)
+                    map_read+=1
+                    
+                    # Iterate over all instances of interval
+                    for interval in self.interval_list:
+                        
+                        # If the read overlap the coordinates, add to the interval
+                        if interval.is_overlapping (read_ref, read.reference_start,
+                        read.reference_end):
+                            interval.add_read(read)
+                        
+                        # Else try to see if the pair overlap the coordinates
+                        elif not read.mate_is_unmapped:
+                            mate_ref = sam.getrname(read.next_reference_id)
+                            
+                            # Verify first if the pair of read is a properly mapped pair
+                            if self.pair_is_concordant(
+                                rref=read_ref,
+                                mref=mate_ref,
+                                tlen=read.template_length,
+                                ror=read.is_reverse,
+                                mor=read.mate_is_reverse):
+                                
+                                # If the pair overlap the coordinates, add to the interval
+                                if interval.is_overlapping(read_ref, read.reference_start,
+                                read.next_reference_start):
+                                    interval.add_read(read)
+                        
+            if self.opt_dict["report_output"]:
+                self.write_report(tot_read, map_read, Interval.get_report())
+                
+            if self.opt_dict["bam_output"]:
+                self.write_bam(sam.header, Interval.get_read())
+            
+            Interval.printInstances()
+            Interval.resetReadCount()
+            Interval.resetReadList()
+            
+            #print ("Total reads :", tot_read)
+            #print ("Mapped reads :", map_read)
+            #print ("Overlapping reads :", overlap_read)
+            #print ("Overlapping pair :", overlap_pair)
+            
         return (stime)
+        
+        
+        
+    def pair_is_concordant(self, rref, mref, tlen, ror, mor):
+        """
+        """
+        # Verify lenght of the template, if read and mate are on the same reference and if
+        # their orientation is concordant (R1F2 or F1R2) 
+        
+        return 0 < abs(tlen) <= self.max_tlen and rref == mref and ror != mor
 
     ##~~~~~~~PRIVATE METHODS~~~~~~~#
 
@@ -151,45 +240,6 @@ class Main(object):
                 'bam_output' : options.bam_output,
                 'report_output' : options.report_output,
                 'align_files' : args })
-
-
-    #def _sam_spliter (self):
-        #"""
-        #"""
-        #with pysam.Samfile(self.sam, "r" ) as samfile:
-            #self.bam_header = samfile.header
-
-            ## Give the header of the sam file to all Reference.Instances to respect the same order
-            ## references in sorted bam files
-            #Reference.set_global("bam_header", self.bam_header)
-
-            ## Create a dict to collect unmapped and low quality reads
-            #Secondary = Sequence (name = 'Secondary', length = 0)
-            #Unmapped = Sequence (name = 'Unmapped', length = 0)
-            #LowMapq = Sequence (name = 'LowMapq', length = 0)
-            #self.garbage_read = [Secondary, Unmapped, LowMapq]
-
-            #for read in samfile:
-                ## Always remove secondary alignments
-                #if read.is_secondary:
-                    #Secondary.add_read(read)
-                ## Filter Unmapped reads
-                #elif read.tid == -1:
-                    #Unmapped.add_read(read)
-                ## Filter Low MAPQ reads
-                #elif read.mapq < self.min_mapq:
-                    #LowMapq.add_read(read)
-                ## Finally if all is fine attribute the read to a Reference
-                #else:
-                    #Reference.addRead(samfile.getrname(read.tid), read)
-
-        ## Removing the original sam file which is no longer needed
-        #remove(self.sam)
-        #self.sam = None
-
-
-
-
 
 
 #~~~~~~~TOP LEVEL INSTRUCTIONS~~~~~~~#

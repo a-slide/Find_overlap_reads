@@ -32,19 +32,33 @@ class Interval(object):
 
     @ classmethod
     def printInstances (self):
-        for ref in self.Instances:
-            print (ref)
+        for inter in self.Instances:
+            print (inter)
 
     @ classmethod
     def resetInstances (self):
         print ("Clearing Reference instances list")
         self.Instances = []
         self.id_count = 0
+    
+    @ classmethod
+    def resetReadCount (self):
+        for inter in self.Instances:
+            inter.nread=0
+        
+    @ classmethod
+    def resetReadList (self):
+        for inter in self.Instances:
+            inter.read_list=[]
 
     #~~~~~~~FONDAMENTAL METHODS~~~~~~~#
 
     def __init__(self, ref_name, start, end, name=None):
         """
+        @param ref_name Name of the reference sequence
+        @param start Start coordinates of the interval (INT)
+        @param end End coordinates of the interval (INT)
+        @param name Facultative name of the interval
         """
         # Store object variables
         self.id = self.next_id()
@@ -53,11 +67,9 @@ class Interval(object):
 
         # Store start and end in crescent order
         if start <= end:
-            self.start = int(start)
-            self.end = int(end)
+            self.start, self.end = start, end
         else:
-            self.end = int(start)
-            self.start = int(end)
+            self.start, self.end = end, start
 
         # Define additional variables
         self.nread = 0
