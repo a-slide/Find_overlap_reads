@@ -1,7 +1,5 @@
-
 # GLOBAL IMPORTS
-
-import pysam # from pysam 0.8.1
+#import pysam # from pysam 0.8.1
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 class Interval(object):
@@ -9,8 +7,8 @@ class Interval(object):
     @class  Reference
     @brief  Object oriented class containing informations of genomic interval
     """
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#    
-    
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
     #~~~~~~~CLASS FIELDS~~~~~~~#
 
     Instances = [] # Class field used for instance tracking
@@ -35,7 +33,7 @@ class Interval(object):
     @ classmethod
     def printInstances (self):
         for ref in self.Instances:
-            print (repr(ref))
+            print (ref)
 
     @ classmethod
     def resetInstances (self):
@@ -45,13 +43,14 @@ class Interval(object):
 
     #~~~~~~~FONDAMENTAL METHODS~~~~~~~#
 
-    def __init__(self, ref_name, start, end):
+    def __init__(self, ref_name, start, end, name=None):
         """
         """
         # Store object variables
         self.id = self.next_id()
         self.ref_name = ref_name
-        
+        self.name = name
+
         # Store start and end in crescent order
         if start <= end:
             self.start = int(start)
@@ -68,10 +67,11 @@ class Interval(object):
         self.Instances.append(self)
 
     def __str__(self):
-        return "{} [{}:{}] = {} overlapping read pairs".format(
+        return "{} [{}:{}] {} = {} reads found".format(
             self.ref_name,
             self.start,
             self.end,
+            self.name if self.name else "",
             self.nread)
 
     def __repr__(self):
@@ -89,13 +89,13 @@ class Interval(object):
     #~~~~~~~PUBLIC METHODS~~~~~~~#
 
     def is_overlapping (self, ref_name, start, end):
-        
-        # Reverse value order if negative order 
+
+        # Reverse value order if negative order
         if start > end:
             start, end = end, start
-        
+
         return ref_name == self.ref_name and start <= self.start and end >= self.end
-    
+
     def add_read (self, read):
         """
         Add a read to read_list and update the counter
@@ -108,5 +108,5 @@ class Interval(object):
         sort read in read_list according to their leftmost position
         """
         self.read_list.sort(key = lambda x: x.pos)
-        
+
     ## def WRITE BAM (self):
