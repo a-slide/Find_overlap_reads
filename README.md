@@ -1,13 +1,13 @@
 # Find_overlap_reads
 
 ## Motivation
-Parse a BAM file and extract reads ovelapping given genomic coordinates
+Parse a BAM/SAM file(s) and extract reads overlapping given genomic coordinates
 
 ## Principle
 
 ## Dependencies
 
-pysam 0.80
+*[pysam](https://github.com/pysam-developers/pysam) 0.8.1+ (based on htslib and samtools versions 1.1)
 
 ## Get Find_overlap_reads
 
