@@ -42,6 +42,12 @@ class Interval(object):
         self.id_count = 0
     
     @ classmethod
+    def get_report (self):
+        report = [["ref_name", "start", "end", "name", "nread"]]
+        report += [[i.ref_name, i.start, i.end, i.name, i.nread] for i in self.Instances]
+        return report 
+    
+    @ classmethod
     def resetReadCount (self):
         for inter in self.Instances:
             inter.nread=0
@@ -53,7 +59,7 @@ class Interval(object):
 
     #~~~~~~~FONDAMENTAL METHODS~~~~~~~#
 
-    def __init__(self, ref_name, start, end, name=None):
+    def __init__(self, ref_name, start, end, name="-"):
         """
         @param ref_name Name of the reference sequence
         @param start Start coordinates of the interval (INT)
@@ -83,7 +89,7 @@ class Interval(object):
             self.ref_name,
             self.start,
             self.end,
-            self.name if self.name else "",
+            self.name,
             self.nread)
 
     def __repr__(self):

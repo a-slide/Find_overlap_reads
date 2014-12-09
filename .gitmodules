@@ -1,0 +1,3 @@
+[submodule "pyDNA3"]
+	path = pyDNA3
+	url = https://github.com/a-slide/pyDNA3.git
