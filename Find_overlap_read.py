@@ -41,8 +41,7 @@ class Main(object):
 
     #~~~~~~~FONDAMENTAL METHODS~~~~~~~#
 
-    def __init__ (self, interval_file=None, align_files=[], output_prefix="out",
-        bam_output=True, report_output=True):
+    def __init__ (self, interval_file=None, align_files=[], bam_output=True, report_output=True):
 
         # Define instance variables
         self.program_name =  "find_overlap_read"
@@ -53,7 +52,6 @@ class Main(object):
         if interval_file:
             self.opt_dict = {
                 'interval_file' : interval_file,
-                'output_prefix' : output_prefix,
                 'bam_output' : bam_output,
                 'report_output' : report_output,
                 'align_files' : align_files }
@@ -61,13 +59,9 @@ class Main(object):
         # Else for Shell call = parse and verify more throrougly CLI arguments
         else:
             self.opt_dict = self._optparser()
-        
-        # Print the dictionnary
-        for key, value in self.opt_dict.items():
-            print (key, "=", value)
 
         # Parse the csv file containing interval coordinates
-        print ("Parsing the CSV csv file containing interval coordinates")
+        print ("Parsing the CSV csv file containing interval coordinates\n")
         with open(self.opt_dict["interval_file"], newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter='\t')
             for row in reader:
@@ -87,10 +81,10 @@ class Main(object):
                     print (E, "\tSkiping row")
         
         if Interval.countInstances() == 0:
-            raise ValueError ("No valid row found in the interval file. Please see readme file")
+            raise ValueError ("No valid row found in the interval file. Please see readme file\n")
         
-        Interval.printInstances()
-        print ("{} valid interval(s) found in {}".format(
+        #Interval.printInstances()
+        print ("{} valid interval(s) found in {}\n".format(
             Interval.countInstances(),
             self.opt_dict["interval_file"]))
 
@@ -123,8 +117,8 @@ class Main(object):
         
         # Iterate over the bam/sam alignment files given as positional arguments 
         for al_file in self.opt_dict["align_files"]:
+            print ("Analyse file {}".format(file_basename(al_file)))
             sam = pysam.AlignmentFile(al_file, "rb")
-            
             tot_read = map_read = 0
             report_list = []
             
@@ -166,13 +160,14 @@ class Main(object):
                 self._write_report(al_file, tot_read, map_read, Interval.get_report())
                 
             if self.opt_dict["bam_output"]:
-                self._write_bam(sam.header, Interval.get_read())
+                self._write_bam(al_file, sam.header, Interval.get_read())
             
             Interval.printInstances()
             Interval.resetReadCount()
             Interval.resetReadList()
             
-        print (time()-(stime), "s")
+        print ("\n##### DONE #####\n")
+        print ("Total execution time = {}s".format(round(time()-stime, 2)))
         
 
     ##~~~~~~~PRIVATE METHODS~~~~~~~#
@@ -185,7 +180,7 @@ class Main(object):
         @return A dictionnary containing:
         """
         # Usage and version
-        usage_string = ("{} -f genomic_interval.csv [-o Output_prefix] [-b/-r] f1.bam(sam),"
+        usage_string = ("{} -f genomic_interval.csv [-b/-r] f1.bam(sam),"
         "[f2.bam(sam)...fn.bam(sam)\n Parse a BAM/SAM file(s) and extract reads overlapping given"
         " genomic coordinates\n").format(self.program_name)
         version_string = "{} {}".format(self.program_name, self.program_version)
@@ -194,8 +189,6 @@ class Main(object):
         # Define optparser options
         optparser.add_option('-f', dest="interval_file",
         help="Path of the tab separated file contaning genomic interval (mandatory)")
-        optparser.add_option( '-o', '--output', default="out", dest="output_prefix",
-        help="Facultative option to indicate the name of the output prefix (default = out)" )
         optparser.add_option('-b', '--no_bam', action="store_false", dest="bam_output",
         default=True, help="Don't output bam file(s) (default = True)")
         optparser.add_option('-r', '--no_report', action="store_false", dest="report_output",
@@ -223,7 +216,6 @@ class Main(object):
 
         # Create a dictionnary of options for further ease to use
         return ({'interval_file' : options.interval_file,
-                'output_prefix' : options.output_prefix,
                 'bam_output' : options.bam_output,
                 'report_output' : options.report_output,
                 'align_files' : args })
@@ -239,12 +231,29 @@ class Main(object):
         """
         Write a brief report containing the number of read mapped for each interval
         """
-        
         # Generate a output name for the report
-        outname = "./{}_{}_report.txt".format(file_basename(al_file), self.opt_dict["output_prefix"])
-        print (outname)
+        outname = "./{}_report.txt".format(file_basename(al_file))
+        with open(outname, "w") as report:
+            report.write("Total_reads\t{}\n".format(tot_read))
+            report.write("Mapped_reads\t{}\n\n".format(map_read))
+            for line in interval_report:
+                report.write("\t".join(map(str, line))+"\n")
+                
+    def _write_bam(self, al_file, header, read_list):
+        """
+        Write all read mapped on intervals in an unsorted bam file
+        """
+        # Generate a output name for the bam file
+        outname = "./{}_overlap".format(file_basename(al_file))
         
+        with pysam.Samfile("temp.bam", "wb", header=header) as bamfile:
+            for read in read_list:
+                bamfile.write(read)
         
+        # That is a little dirty and unoptimized but it works
+        pysam.sort("temp.bam", outname)
+        os.remove("temp.bam")
+        pysam.index (outname+".bam")
 
 #~~~~~~~TOP LEVEL INSTRUCTIONS~~~~~~~#
 if __name__ == '__main__':

@@ -37,15 +37,21 @@ class Interval(object):
 
     @ classmethod
     def resetInstances (self):
-        print ("Clearing Reference instances list")
         self.Instances = []
         self.id_count = 0
+    
+    @ classmethod
+    def get_read (self):
+        read_list =[]
+        for i in self.Instances:
+            read_list.extend(i.read_list)
+        return read_list
     
     @ classmethod
     def get_report (self):
         report = [["ref_name", "start", "end", "name", "nread"]]
         report += [[i.ref_name, i.start, i.end, i.name, i.nread] for i in self.Instances]
-        return report 
+        return report
     
     @ classmethod
     def resetReadCount (self):
@@ -127,4 +133,3 @@ class Interval(object):
         """
         self.read_list.sort(key = lambda x: x.pos)
 
-    ## def WRITE BAM (self):
