@@ -30,7 +30,7 @@ except ImportError as E:
 
 # PACKAGE IMPORTS
 from Find_overlap_read_src.Interval import Interval
-from pyDNA3.Utilities import file_basename
+from pyDNA3.Utilities import file_basename, file_name
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 class Main(object):
@@ -41,7 +41,8 @@ class Main(object):
 
     #~~~~~~~FONDAMENTAL METHODS~~~~~~~#
 
-    def __init__ (self, interval_file=None, align_files=[], bam_output=True, report_output=True):
+    def __init__ (self, interval_file=None, template_len=1000, align_files=[],
+        bam_output=True, report_output=True):
 
         # Define instance variables
         self.program_name =  "find_overlap_read"
@@ -52,6 +53,7 @@ class Main(object):
         if interval_file:
             self.opt_dict = {
                 'interval_file' : interval_file,
+                'template_len' : template_len,
                 'bam_output' : bam_output,
                 'report_output' : report_output,
                 'align_files' : align_files }
@@ -61,7 +63,7 @@ class Main(object):
             self.opt_dict = self._optparser()
 
         # Parse the csv file containing interval coordinates
-        print ("Parsing the CSV csv file containing interval coordinates\n")
+        print ("Parsing the file containing genomic interval coordinates\n")
         with open(self.opt_dict["interval_file"], newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter='\t')
             for row in reader:
@@ -117,7 +119,7 @@ class Main(object):
         
         # Iterate over the bam/sam alignment files given as positional arguments 
         for al_file in self.opt_dict["align_files"]:
-            print ("Analyse file {}".format(file_basename(al_file)))
+            print ("Analyse file {}".format(file_name(al_file)))
             sam = pysam.AlignmentFile(al_file, "rb")
             tot_read = map_read = 0
             report_list = []
@@ -145,11 +147,12 @@ class Main(object):
                             
                             # Verify first if the pair of read is a properly mapped pair
                             if self._pair_is_concordant(
-                                rref=read_ref,
-                                mref=mate_ref,
-                                tlen=read.template_length,
-                                ror=read.is_reverse,
-                                mor=read.mate_is_reverse):
+                                read_ref,
+                                mate_ref,
+                                read.is_reverse,
+                                read.mate_is_reverse,
+                                read.reference_start,
+                                read.next_reference_start):
                                 
                                 # If the pair overlap the coordinates, add to the interval
                                 if interval.is_overlapping(read_ref, read.reference_start,
@@ -157,9 +160,11 @@ class Main(object):
                                     interval.add_read(read)
             
             if self.opt_dict["report_output"]:
+                print("Write report")
                 self._write_report(al_file, tot_read, map_read, Interval.get_report())
                 
             if self.opt_dict["bam_output"]:
+                ("Write Bam")
                 self._write_bam(al_file, sam.header, Interval.get_read())
             
             Interval.printInstances()
@@ -189,10 +194,14 @@ class Main(object):
         # Define optparser options
         optparser.add_option('-f', dest="interval_file",
         help="Path of the tab separated file contaning genomic interval (mandatory)")
+        optparser.add_option('-t', dest="template_len", default=1000,
+        help="Maximum length of the template between 2 paired reads to be considered as "
+        "a concordant pair (default = 1000)")
         optparser.add_option('-b', '--no_bam', action="store_false", dest="bam_output",
         default=True, help="Don't output bam file(s) (default = True)")
         optparser.add_option('-r', '--no_report', action="store_false", dest="report_output",
         default=True, help="Don't output report file(s) (default = True)")
+        
 
         # Parse arg and return a dictionnary_like object of options
         options, args = optparser.parse_args()
@@ -216,16 +225,26 @@ class Main(object):
 
         # Create a dictionnary of options for further ease to use
         return ({'interval_file' : options.interval_file,
-                'bam_output' : options.bam_output,
-                'report_output' : options.report_output,
-                'align_files' : args })
+                 'template_len' : int(options.template_len),
+                 'bam_output' : options.bam_output,
+                 'report_output' : options.report_output,
+                 'align_files' : args })
 
-    def _pair_is_concordant(self, rref, mref, tlen, ror, mor):
+    def _pair_is_concordant(self, read_ref, mate_ref, read_reverse, mate_reverse, read_start, mate_start):
         """
         Verify lenght of the template, if read and mate are on the same reference and if
         their orientation is concordant (R1F2 or F1R2)
         """
-        return 0 < abs(tlen) <= self.max_tlen and rref == mref and ror != mor
+        if read_ref == mate_ref:
+            if not read_reverse and mate_reverse:
+                if 0 < mate_start-read_start <= self.opt_dict['template_len']:
+                    return True
+            elif read_reverse and not mate_reverse:
+                if 0 < read_start-mate_start <= self.opt_dict['template_len']:
+                    return True
+                    
+        # In all other conditions
+        return False
         
     def _write_report(self, al_file, tot_read, map_read, interval_report):
         """
@@ -234,14 +253,15 @@ class Main(object):
         # Generate a output name for the report
         outname = "./{}_report.txt".format(file_basename(al_file))
         with open(outname, "w") as report:
+            report.write("{}\n".format(file_basename(al_file)))
             report.write("Total_reads\t{}\n".format(tot_read))
-            report.write("Mapped_reads\t{}\n\n".format(map_read))
+            report.write("Mapped_reads\t{}\n".format(map_read))
             for line in interval_report:
                 report.write("\t".join(map(str, line))+"\n")
                 
     def _write_bam(self, al_file, header, read_list):
         """
-        Write all read mapped on intervals in an unsorted bam file
+        Write all read mapped on intervals in a sorted bam file
         """
         # Generate a output name for the bam file
         outname = "./{}_overlap".format(file_basename(al_file))
@@ -254,6 +274,7 @@ class Main(object):
         pysam.sort("temp.bam", outname)
         os.remove("temp.bam")
         pysam.index (outname+".bam")
+
 
 #~~~~~~~TOP LEVEL INSTRUCTIONS~~~~~~~#
 if __name__ == '__main__':

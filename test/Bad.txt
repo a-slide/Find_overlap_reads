@@ -1,5 +1,0 @@
-SSV9K2-CMV-GFP-HygroTK-bGHpA	200
-4800	4850
-
-test	132	a
-test	1111

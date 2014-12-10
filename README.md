@@ -44,7 +44,8 @@ $ sudo chmod u+x Find_overlap_reads.py
     Options:
         --version         show program's version number and exit
         -h, --help        show this help message and exit
-        -f INTERVAL_FILE  Path of the tab separated file contaning genomic interval (mandatory)*
+        -f INTERVAL_FILE  Path of the tab separated file contaning genomic interval (mandatory)
+        -t TEMPLATE_LEN   Maximum length of the template between 2 paired reads to be considered as a concordant pair (default = 1000)
         -b, --no_bam      Don't output bam file(s) (default = True)
         -r, --no_report   Don't output report file(s) (default = True)
 
