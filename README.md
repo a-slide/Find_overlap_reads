@@ -26,7 +26,7 @@ sudo pip install pysam
 
 * Clone the repository with --recursive option to also pull the submodule
 ``` bash
-$ git clone --recursive https://github.com/a-slide/Find_overlap_reads/ my_folder/
+$ git clone --recursive https://github.com/a-slide/Find_overlap_reads.git
 ```
 
 * Enter the root of the program folder and make the main script executable
