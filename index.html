@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Find overlap reads : Parse a BAM file and extract reads ovelapping given genomic coordinates">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Find overlap reads</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/a-slide/Find_overlap_reads">View on GitHub</a>
+
+          <h1 id="project_title">Find overlap reads</h1>
+          <h2 id="project_tagline">Parse a BAM file and extract reads ovelapping given genomic coordinates</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/a-slide/Find_overlap_reads/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/a-slide/Find_overlap_reads/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a id="find_overlap_reads" class="anchor" href="#find_overlap_reads" aria-hidden="true"><span class="octicon octicon-link"></span></a>Find_overlap_reads</h1>
+
+<h2>
+<a id="motivation" class="anchor" href="#motivation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Motivation</h2>
+
+<p>Find_overlap_reads is a <strong>python3</strong> object oriented script, developed to parse a genomic alignment files(BAM/SAM). The program is intended to count and extract reads or read pairs overlapping genomic intervals provided in a tab-separated text file.</p>
+
+<h2>
+<a id="principle" class="anchor" href="#principle" aria-hidden="true"><span class="octicon octicon-link"></span></a>Principle</h2>
+
+<ol>
+<li>The interval file is parsed and Interval objects are created for each valid line within it.</li>
+<li>Sam/Bam (CRAM?) files are parsed iteratively with <em>pysam</em>.</li>
+<li>For each read the program verify if the read itself or the template covered by the read and its pair overlap one of the genomic interval.</li>
+<li>A report containing the total number of reads, the number of read mapped and the reads overlapping each interval is created in the current dir.</li>
+<li>A subset of bam containing only read overlapping intervals is generated, sorted and indexed.<br>
+</li>
+</ol>
+
+<h2>
+<a id="dependencies" class="anchor" href="#dependencies" aria-hidden="true"><span class="octicon octicon-link"></span></a>Dependencies</h2>
+
+<ul>
+<li>
+<a href="https://github.com/pysam-developers/pysam">pysam</a> 0.8.1+ (based on htslib and samtools versions 1.1)</li>
+</ul>
+
+<p>If you have pip already installed, enter the following line to install pysam:</p>
+
+<div class="highlight highlight-bash"><pre>sudo pip install pysam</pre></div>
+
+<h2>
+<a id="get-find_overlap_reads" class="anchor" href="#get-find_overlap_reads" aria-hidden="true"><span class="octicon octicon-link"></span></a>Get Find_overlap_reads</h2>
+
+<ul>
+<li>Clone the repository with --recursive option to also pull the submodule</li>
+</ul>
+
+<div class="highlight highlight-bash"><pre>$ git clone --recursive https://github.com/a-slide/Find_overlap_reads/ my_folder/</pre></div>
+
+<ul>
+<li>Enter the root of the program folder and make the main script executable</li>
+</ul>
+
+<div class="highlight highlight-bash"><pre>$ sudo chmod u+x Find_overlap_reads.py</pre></div>
+
+<ul>
+<li>Add Find_overlap_reads.py in your PATH</li>
+</ul>
+
+<h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<pre><code>Usage: find_overlap_read -f genomic_interval.csv [-b/-r] f1.bam(sam),[f2.bam(sam)...fn.bam(sam)
+Parse a BAM/SAM file(s) and extract reads overlapping given genomic coordinates
+
+Options:
+    --version         show program's version number and exit
+    -h, --help        show this help message and exit
+    -f INTERVAL_FILE  Path of the tab separated file contaning genomic interval (mandatory)*
+    -b, --no_bam      Don't output bam file(s) (default = True)
+    -r, --no_report   Don't output report file(s) (default = True)
+</code></pre>
+
+<h4>
+<a id="genomic-interval-file" class="anchor" href="#genomic-interval-file" aria-hidden="true"><span class="octicon octicon-link"></span></a>Genomic interval file</h4>
+
+<p>The file containing genomic intervals have to be formated as a <strong>tab-separated values</strong> text format as follow:</p>
+
+<p><code>Name_of_the_the_reference    start_coordinate(INT)    end_coordinate(INT)    Name_of_the_interval (facultative)</code></p>
+
+<p>Lines with invalid integer values or less than 3 fields will be skipped. An error will be raised if no valid interval was found.
+Examples of valid and invalid files are provided in the demo/ folder. A standard Bed file would be considered as a </p>
+
+<h4>
+<a id="aligment-files-sambam" class="anchor" href="#aligment-files-sambam" aria-hidden="true"><span class="octicon octicon-link"></span></a>Aligment files (sam/bam)</h4>
+
+<p>A list of bam, sam and or cram files containing</p>
+
+<h2>
+<a id="development-notebook" class="anchor" href="#development-notebook" aria-hidden="true"><span class="octicon octicon-link"></span></a>Development notebook</h2>
+
+<p>2 possibilities:</p>
+
+<ul>
+<li>Use ipython notebook with Dev_notebook.ipynb</li>
+<li>Consult directly online through nbviewer : <a href="http://nbviewer.ipython.org/github/a-slide/Find_overlap_reads/blob/master/Dev_notebook.ipynb">Notebook</a>
+</li>
+</ul>
+
+<h2>
+<a id="authors-and-contact" class="anchor" href="#authors-and-contact" aria-hidden="true"><span class="octicon octicon-link"></span></a>Authors and Contact</h2>
+
+<p>Adrien Leger - 2014</p>
+
+<ul>
+<li><a href="mailto:adrien.leger@gmail.com">adrien.leger@gmail.com</a></li>
+<li><a href="mailto:adrien.leger@inserm.fr">adrien.leger@inserm.fr</a></li>
+<li><a href="mailto:adrien.leger@univ-nantes.fr">adrien.leger@univ-nantes.fr</a></li>
+<li><a href="https://github.com/a-slide">Github</a></li>
+<li><a href="http://www.atlantic-gene-therapies.fr/">Atlantic Gene Therapies - INSERM 1089</a></li>
+</ul>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Find overlap reads maintained by <a href="https://github.com/a-slide">a-slide</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
