@@ -1,7 +1,5 @@
 # Find_overlap_reads
 
-[see GitHub Page](http://a-slide.github.io/Find_overlap_reads) 
-
 ## Motivation
 Find_overlap_reads is a **python3** object oriented script, developed to parse a genomic alignment files(BAM/SAM). The program is intended to count and extract reads or read pairs overlapping genomic intervals provided in a tab-separated text file.
 
